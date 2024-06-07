@@ -9,8 +9,6 @@ import numpy as np
 from sklearn import neighbors
 from rail.estimation.estimator import CatEstimator, CatInformer
 
-'''
-Hay que terminar esta funcion. Asi no funcoinaria porque no esta definido magdata
 def _computemagdata(data, column_names, err_names):
     """
     make a dataset consisting of N-1 colors and errors in quadrature.******
@@ -19,15 +17,20 @@ def _computemagdata(data, column_names, err_names):
     numerrcols = len(err_names)
     if numcols != numerrcols:  # pragma: no cover
         raise ValueError("number of magnitude and error columns must be the same!")
-    for i in range(numcols):
+    
+    magdata = np.array(data[column_names[0]])
+    errdata = np.array(data[err_names[0]])
+    
+    # Iteramos desde el segundo elemento
+    for i in range(1, numcols):
         tmpmag = np.array(data[column_names[i]])
         tmperr = np.array(data[err_names[i]])
         
-        magdata = np.vstack((magdata, tmpcolor))
+        magdata = np.vstack((magdata, tmpmag))
         errdata = np.vstack((errdata, tmperr))
+        
     return magdata.T, errdata.T
-'''
-
+    
 class DNFInformer(CatInformer):
     """Descripcion of the funcion ***
     """
