@@ -67,13 +67,10 @@ class DNFInformer(CatInformer):
             else:
                 training_data[col][mask] = np.nan
                 training_data[err][mask] = np.nan
-           
-        #mag_data, mag_err = _computemagdata(training_data,
-        #                                      self.config.bands,
-        #                                      self.config.err_bands)
-
-        mag_data = training_data[self.config.bands]
-        mag_err  = training_data[self.config.err_bands]
+                
+        mag_data, mag_err = _computemagdata(training_data,
+                                              self.config.bands,
+                                              self.config.err_bands)           
         
         self.model = dict(train_mag=mag_data, train_err=mag_err, truez=specz,
                           nondet_choice=self.config.nondetect_replace)
