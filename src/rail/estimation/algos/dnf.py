@@ -77,8 +77,28 @@ class DNFInformer(CatInformer):
         self.add_data('model', self.model)        
    
 
-#class DNFEstimator(CatEstimator):
-
+class DNFEstimator(CatEstimator):
+    """ Aqui habra que escribir una descripcion de la funcion"""
+    
+    name = 'DNFEstimator'
+    config_options = CatEstimator.config_options.copy()
+    config_options.update(zmin=SHARED_PARAMS,
+                          zmax=SHARED_PARAMS,
+                          nzbins=SHARED_PARAMS,
+                          bands=SHARED_PARAMS,
+                          err_bands=SHARED_PARAMS,
+                          nondetect_val=SHARED_PARAMS,
+                          mag_limits=SHARED_PARAMS,
+                          redshift_col=SHARED_PARAMS,
+                          # seed=Param(int, 66, msg="random seed used in selection mode"),
+                          # ppf_value=Param(float, 0.68, msg="PPF value used in Mahalanobis distance"),
+                          selection_mode=Param(int, 1, msg="select which mode to choose the redshift estimate:"
+                                               "0: ENF, 1: ,ANF, 2: DNF"), # Habra que detallar mas que significa cada caso
+                          min_n=Param(int, 25, msg="minimum number of training galaxies to use"),
+                          min_thresh=Param(float, 0.0001, msg="minimum threshold cutoff"),
+                          min_dist=Param(float, 0.0001, msg="minimum Mahalanobis distance"),
+                          bad_redshift_val=Param(float, 99., msg="redshift to assign bad redshifts"),
+                          bad_redshift_err=Param(float, 10., msg="Gauss error width to assign to bad redshifts")
 
 
 
