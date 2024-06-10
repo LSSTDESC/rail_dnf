@@ -100,7 +100,20 @@ class DNFEstimator(CatEstimator):
                           bad_redshift_val=Param(float, 99., msg="redshift to assign bad redshifts"),
                           bad_redshift_err=Param(float, 10., msg="Gauss error width to assign to bad redshifts")
 
+                          
+    def __init__(self, args, comm=None):
+        """ Constructor:
+        Do Estimator specific initialization """
+        self.truezs = None
+        self.model = None    # Asegurar este parametro y su necesidad
+        self.zgrid = None
+        CatEstimator.__init__(self, args, comm=comm)
+        usecols = self.config.bands.copy()
+        usecols.append(self.config.redshift_col)
+        self.usecols = usecols
 
+
+                          
 
 
 def greetings() -> str:
