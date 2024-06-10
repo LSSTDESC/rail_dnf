@@ -103,7 +103,8 @@ class DNFEstimator(CatEstimator):
                           
     def __init__(self, args, comm=None):
         """ Constructor:
-        Do Estimator specific initialization """
+        Do Estimator specific initialization 
+        ¿necesito algun parametro mas?"""
         self.truezs = None
         self.model = None    # Asegurar este parametro y su necesidad
         self.zgrid = None
@@ -112,7 +113,14 @@ class DNFEstimator(CatEstimator):
         usecols.append(self.config.redshift_col)
         self.usecols = usecols
 
-
+    def open_model(self, **kwargs):
+        CatEstimator.open_model(self, **kwargs)
+        if self.model is None:  # pragma: no cover
+            return
+        self.train_mag = self.model['train_mag']
+        self.train_err = self.model['train_err']
+        self.truez = self.model['truez']
+        self.nondet_choice = self.model['nondet_choice']
                           
 
 
