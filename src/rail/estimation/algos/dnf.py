@@ -55,7 +55,8 @@ class DNFInformer(CatInformer):
         else:
             training_data = self.get_data('input')
         specz = np.array(training_data[self.config['redshift_col']])
-        
+
+        '''
         # replace nondetects
         for col, err in zip(self.config.bands, self.config.err_bands):
             if np.isnan(self.config.nondetect_val):  
@@ -68,7 +69,7 @@ class DNFInformer(CatInformer):
             else:
                 training_data[col][mask] = np.nan
                 training_data[err][mask] = np.nan
-                
+        '''       
         mag_data, mag_err = _computemagdata(training_data,
                                               self.config.bands,
                                               self.config.err_bands)           
@@ -87,7 +88,7 @@ class DNFEstimator(CatEstimator):
                           zmax=SHARED_PARAMS,
                           nzbins=SHARED_PARAMS,
                           bands=SHARED_PARAMS,
-                          err_bands=SHARED_PARAMS,  # DNF utiliza el error del train? No tengo claro si este es del train o del valid
+                          err_bands=SHARED_PARAMS, 
                           nondetect_val=SHARED_PARAMS,
                           mag_limits=SHARED_PARAMS,
                           redshift_col=SHARED_PARAMS,
@@ -126,6 +127,41 @@ class DNFEstimator(CatEstimator):
         self.truez = self.model['truez']
         self.nondet_choice = self.model['nondet_choice']
                           
+    def _process_chunk(self, start, end, data, first): # hay que dejar este nombre porque es el que ponen todos
+        
+        print(f"Process {self.rank} estimating PZ PDF for rows {start:,} - {end:,}")
+        '''
+        # replace nondetects
+        for col, err in zip(self.config.bands, self.config.err_bands):
+            if np.isnan(self.config.nondetect_val):  # pragma: no cover
+                mask = np.isnan(data[col])
+            else:
+                mask = np.isclose(data[col], self.config.nondetect_val)
+            if self.nondet_choice:
+                data[col][mask] = self.config.mag_limits[col]
+                data[err][mask] = 1.0  # could also put 0.757 for 1 sigma, but slightly inflated seems good
+            else:
+                data[col][mask] = np.nan
+                data[err][mask] = np.nan
+        '''    
+        test_mag, test_mag_err = _computemagdata(data,
+                                                      self.config.bands,
+                                                      self.config.err_bands)
+        num_gals = test_mag.shape[0]
+        ncols = test_mag.shape[1]
+        
+        self.zgrid = np.linspace(self.config.zmin, self.config.zmax, self.config.nzbins)
+        
+        photoz,photozerr,photozerr_param,photozerr_fit,Vpdf,z1,nneighbors,de1,d1,id1,C  = dnf(self.train_mag, self.truez, test_mag, test_mag_err, self.zgrid, metric='ANF')
+
+        ens = qp.Ensemble(qp.stats.norm, data=dict(loc=np.expand_dims(photoz, -1),
+                                                   scale=np.expand_dims(photozerr, -1)))
+
+        ens.set_ancil(dict(zmode=photoz,photozerr=photozerr,
+                           photozerr_param=photozerr_param,photozerr_fit=photozerr_fit,Vpdf=Vpdf,z1=z1,
+                           nneighbors=nneighbors,de1=de1,d1=d1,id1=id1,C=C))
+        self._do_chunk_output(ens, start, end, first)
+     
 
 
 def greetings() -> str:
