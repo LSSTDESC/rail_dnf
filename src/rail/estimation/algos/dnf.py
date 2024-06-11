@@ -8,6 +8,7 @@ import math
 import numpy as np
 from sklearn import neighbors
 from rail.estimation.estimator import CatEstimator, CatInformer
+from sklearn import neighbors
 
 def _computemagdata(data, column_names, err_names):
     """
