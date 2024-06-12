@@ -41,9 +41,7 @@ class DNFInformer(CatInformer):
                           err_bands=SHARED_PARAMS,    
                           redshift_col=SHARED_PARAMS,
                           mag_limits=SHARED_PARAMS,
-                          nondetect_val=SHARED_PARAMS,
-                          nondetect_replace=Param(bool, False, msg="set to True to replace non-detects,"
-                                                  " False to ignore in distance calculation"))
+                          nondetect_val=SHARED_PARAMS)
 
     def __init__(self, args, comm=None):
         """ Constructor"""  
@@ -56,27 +54,22 @@ class DNFInformer(CatInformer):
             training_data = self.get_data('input')
         specz = np.array(training_data[self.config['redshift_col']])
 
-        '''
         # replace nondetects
         for col, err in zip(self.config.bands, self.config.err_bands):
-            if np.isnan(self.config.nondetect_val):  
+            if np.isnan(self.config.nondetect_val):  # pragma: no cover
                 mask = np.isnan(training_data[col])
             else:
-                mask = np.isclose(training_data[col], self.config.nondetect_val)
-            if self.config.nondetect_replace:
-                training_data[col][mask] = self.config.mag_limits[col]
-                training_data[err][mask] = 1.0  # Discutir este valor
-            else:
-                training_data[col][mask] = np.nan
-                training_data[err][mask] = np.nan
-        '''       
+                mask = np.isclose(training_data[col], self.config.nondetect_val) 
+            
+            training_data[col][mask] = self.config.mag_limits[col]
+            training_data[err][mask] = 1.0  # could also put 0.757 for 1 sigma, but slightly inflated seems good      
+            
         mag_data, mag_err = _computemagdata(training_data,
                                               self.config.bands,
                                               self.config.err_bands)           
         
-        self.model = dict(train_mag=mag_data, train_err=mag_err, truez=specz,
-                          nondet_choice=self.config.nondetect_replace)
-        self.add_data('model', self.model)        
+      self.model = dict(train_mag=mag_data, train_err=mag_err, truez=specz)
+      self.add_data('model', self.model)        
    
 
 class DNFEstimator(CatEstimator):
@@ -125,25 +118,20 @@ class DNFEstimator(CatEstimator):
         self.train_mag = self.model['train_mag']
         self.train_err = self.model['train_err']
         self.truez = self.model['truez']
-        self.nondet_choice = self.model['nondet_choice']
                           
     def _process_chunk(self, start, end, data, first): # hay que dejar este nombre porque es el que ponen todos
         
         print(f"Process {self.rank} estimating PZ PDF for rows {start:,} - {end:,}")
-        '''
         # replace nondetects
         for col, err in zip(self.config.bands, self.config.err_bands):
             if np.isnan(self.config.nondetect_val):  # pragma: no cover
                 mask = np.isnan(data[col])
             else:
                 mask = np.isclose(data[col], self.config.nondetect_val)
-            if self.nondet_choice:
-                data[col][mask] = self.config.mag_limits[col]
-                data[err][mask] = 1.0  # could also put 0.757 for 1 sigma, but slightly inflated seems good
-            else:
-                data[col][mask] = np.nan
-                data[err][mask] = np.nan
-        '''    
+
+            data[col][mask] = self.config.mag_limits[col]
+            data[err][mask] = 1.0  # could also put 0.757 for 1 sigma, but slightly inflated seems good  
+            
         test_mag, test_mag_err = _computemagdata(data,
                                                       self.config.bands,
                                                       self.config.err_bands)
