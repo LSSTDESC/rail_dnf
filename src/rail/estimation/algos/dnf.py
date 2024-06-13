@@ -142,13 +142,16 @@ class DNFEstimator(CatEstimator):
         
         photoz,photozerr,photozerr_param,photozerr_fit,Vpdf,z1,nneighbors,de1,d1,id1,C  = dnf(self.train_mag, self.truez, test_mag, test_mag_err, self.zgrid, metric='ANF')
 
-        ens = qp.Ensemble(qp.stats.norm, data=dict(loc=np.expand_dims(photoz, -1),
-                                                   scale=np.expand_dims(photozerr, -1)))
+        ancil_dictionary = dict()
+        qp_dnf = qp.Ensemble(qp.interp, data=dict(xvals=self.zgrid[:-1], yvals=pdfs))
 
-        ens.set_ancil(dict(zmode=photoz,photozerr=photozerr,
-                           photozerr_param=photozerr_param,photozerr_fit=photozerr_fit,Vpdf=Vpdf,z1=z1,
-                           nneighbors=nneighbors,de1=de1,d1=d1,id1=id1,C=C))
-        self._do_chunk_output(ens, start, end, first)
+
+        ancil_dictionary.update(DNF_Z=photoz,photozerr=photozerr,
+                           photozerr_param=photozerr_param,photozerr_fit=photozerr_fit,DNF_ZN=z1,
+                           nneighbors=nneighbors,de1=de1,d1=d1,id1=id1)
+        qp_dnf.set_ancil(ancil_dictionary)
+        
+        self._do_chunk_output(qp_dnf, start, end, first)
      
 
 def dnf(T,z,V,Verr,zbins,pdf=True,bound=False,radius=2.0,Nneighbors=80,magflux='mag',metric='DNF',coeff=True):
