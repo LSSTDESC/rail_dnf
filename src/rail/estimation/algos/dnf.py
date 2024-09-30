@@ -140,7 +140,7 @@ class DNFEstimator(CatEstimator):
         
         self.zgrid = np.linspace(self.config.zmin, self.config.zmax, self.config.nzbins)
         
-        photoz,photozerr,photozerr_param,photozerr_fit,Vpdf,z1,nneighbors,de1,d1,id1,C  = dnf(self.train_mag, self.truez, test_mag, test_mag_err, self.zgrid, metric='ANF')
+        photoz,photozerr,photozerr_param,photozerr_fit,pdfs,z1,nneighbors,de1,d1,id1,C  = dnf(self.train_mag, self.truez, test_mag, test_mag_err, self.zgrid, metric='ANF')
 
         ancil_dictionary = dict()
         qp_dnf = qp.Ensemble(qp.interp, data=dict(xvals=self.zgrid[:-1], yvals=pdfs))
