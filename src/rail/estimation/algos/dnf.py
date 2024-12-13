@@ -6,8 +6,12 @@ for more details
 
 import math
 import numpy as np
+import qp
 from sklearn import neighbors
+from scipy.stats import chi2
+from ceci.config import StageParameter as Param
 from rail.estimation.estimator import CatEstimator, CatInformer
+from rail.core.common_params import SHARED_PARAMS
 from sklearn import neighbors
 
 def _computemagdata(data, column_names, err_names):
