@@ -154,15 +154,30 @@ class DNFEstimator(CatEstimator):
         
         self.zgrid = np.linspace(self.config.zmin, self.config.zmax, self.config.nzbins)
         
-        photoz,photozerr,photozerr_param,photozerr_fit,pdfs,z1,nneighbors,de1,d1,id1,C  = dnf(self.train_mag, self.truez, test_mag, test_mag_err, self.zgrid, metric='ANF')
+        photoz, photozerr, photozerr_param, photozerr_fit, z1, nneighbors, de1, d1, id1, C, pdfs = \
+            dnf_photometric_redshift(
+                self.train_mag, 
+                self.train_err, 
+                self.truez, 
+                self.clf, 
+                self.Tnorm, 
+                test_mag, 
+                test_mag_err, 
+                self.zgrid, 
+                metric='ANF', 
+                fit=True, 
+                pdf=True, 
+                Nneighbors=80, 
+                presel=500
+            )
 
         ancil_dictionary = dict()
-        qp_dnf = qp.Ensemble(qp.interp, data=dict(xvals=self.zgrid[:-1], yvals=pdfs))
+        qp_dnf = qp.Ensemble(qp.interp, data=dict(xvals=self.zgrid, yvals=pdfs))
 
 
         ancil_dictionary.update(DNF_Z=photoz,photozerr=photozerr,
                            photozerr_param=photozerr_param,photozerr_fit=photozerr_fit,DNF_ZN=z1,
-                           nneighbors=nneighbors,de1=de1,d1=d1,id1=id1)
+                           nneighbors=nneighbors,de1=de1,d1=d1,id1=id1) #, C=C, Vpdf=Vpdf
         qp_dnf.set_ancil(ancil_dictionary)
         
         self._do_chunk_output(qp_dnf, start, end, first)
