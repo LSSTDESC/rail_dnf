@@ -114,7 +114,7 @@ class DNFEstimator(CatEstimator):
     def __init__(self, args, comm=None):
         """ Constructor:
         Do Estimator specific initialization 
-        ¿necesito algun parametro mas?"""
+        """
         self.truezs = None
         self.model = None    # Asegurar este parametro y su necesidad
         self.zgrid = None
@@ -130,7 +130,9 @@ class DNFEstimator(CatEstimator):
         self.train_mag = self.model['train_mag']
         self.train_err = self.model['train_err']
         self.truez = self.model['truez']
-                          
+        self.clf = self.model['clf']
+        self.Tnorm = self.model['train_norm']        
+        
     def _process_chunk(self, start, end, data, first): # hay que dejar este nombre porque es el que ponen todos
         
         print(f"Process {self.rank} estimating PZ PDF for rows {start:,} - {end:,}")
