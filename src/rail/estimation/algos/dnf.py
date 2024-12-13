@@ -48,7 +48,8 @@ class DNFInformer(CatInformer):
                           nondetect_val=SHARED_PARAMS)
 
     def __init__(self, args, comm=None):
-        """ Constructor"""  
+        """ Constructor
+        Do CatInformer specific initialization, then check on bands """ 
         CatInformer.__init__(self, args, comm=comm)
         
     def run(self):
@@ -72,8 +73,15 @@ class DNFInformer(CatInformer):
                                               self.config.bands,
                                               self.config.err_bands)           
         
-      self.model = dict(train_mag=mag_data, train_err=mag_err, truez=specz)
-      self.add_data('model', self.model)        
+        # Training euclidean metric
+        clf = neighbors.KNeighborsRegressor()
+        clf.fit(mag_data, specz)
+        
+        # Training variables
+        Tnorm = np.linalg.norm(mag_data, axis=1)  
+
+        self.model = dict(train_mag=mag_data, train_err=mag_err, truez=specz, clf=clf, train_norm = Tnorm
+        self.add_data('model', self.model)        
    
 
 class DNFEstimator(CatEstimator):
