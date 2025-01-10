@@ -45,12 +45,13 @@ class DNFInformer(CatInformer):
                           err_bands=SHARED_PARAMS,    
                           redshift_col=SHARED_PARAMS,
                           mag_limits=SHARED_PARAMS,
-                          nondetect_val=SHARED_PARAMS)
+                          nondetect_val=SHARED_PARAMS,
+                          hdf5_groupname=SHARED_PARAMS)
 
-    def __init__(self, args, comm=None):
+    def __init__(self, args, **kwargs):
         """ Constructor
         Do CatInformer specific initialization, then check on bands """ 
-        CatInformer.__init__(self, args, comm=comm)
+        super().__init__(args, **kwargs)
         
     def run(self):
         if self.config.hdf5_groupname:
@@ -80,7 +81,7 @@ class DNFInformer(CatInformer):
         # Training variables
         Tnorm = np.linalg.norm(mag_data, axis=1)  
 
-        self.model = dict(train_mag=mag_data, train_err=mag_err, truez=specz, clf=clf, train_norm = Tnorm
+        self.model = dict(train_mag=mag_data, train_err=mag_err, truez=specz, clf=clf, train_norm = Tnorm)
         self.add_data('model', self.model)        
    
 
@@ -111,14 +112,14 @@ class DNFEstimator(CatEstimator):
                           )
 
                           
-    def __init__(self, args, comm=None):
+    def __init__(self, args, **kwargs):
         """ Constructor:
         Do Estimator specific initialization 
         """
         self.truezs = None
         self.model = None    # Asegurar este parametro y su necesidad
         self.zgrid = None
-        CatEstimator.__init__(self, args, comm=comm)
+        super().__init__(args, **kwargs)
         usecols = self.config.bands.copy()
         usecols.append(self.config.redshift_col)
         self.usecols = usecols
@@ -486,7 +487,7 @@ def compute_photoz_fit(NEIGHBORS, V, Verr, T, z, fit, photoz, photozerr, photoze
                B = z[NEIGHBORSs['index']]
                 
                # Solve the least squares problem
-               X = np.linalg.lstsq(A, B)
+               X = np.linalg.lstsq(A, B, rcond=-1)
                residuals = B - np.dot(A, X[0]) # Compute residuals
                 
                # Identify outliers using a 3-sigma threshold
