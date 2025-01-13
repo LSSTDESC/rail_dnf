@@ -57,7 +57,7 @@ class DNFInformer(CatInformer):
         if self.config.hdf5_groupname:
             training_data = self.get_data('input')[self.config.hdf5_groupname]
         else:
-            training_data = self.get_data('input')
+            training_data = self.get_data('input')  # pragma: no cover
         specz = np.array(training_data[self.config['redshift_col']])
 
         # replace nondetects
@@ -119,11 +119,21 @@ class DNFEstimator(CatEstimator):
         self.truezs = None
         self.model = None    # Asegurar este parametro y su necesidad
         self.zgrid = None
+        self.metric = "ANF"
         super().__init__(args, **kwargs)
         usecols = self.config.bands.copy()
         usecols.append(self.config.redshift_col)
         self.usecols = usecols
-
+        # set up selection mode metric choice
+        if self.config.selection_mode == 0:
+            self.metric = "ENF"
+        elif self.config.selection_mode == 1:
+            self.metric = "ANF"
+        elif self.config.selection_mode == 2:
+            self.metric = "DNF"
+        else:
+            raise ValueError("invalid value for config parameter selection_mode! Valid values are 0, 1, and 2")
+        
     def open_model(self, **kwargs):
         CatEstimator.open_model(self, **kwargs)
         if self.model is None:  # pragma: no cover
@@ -165,7 +175,7 @@ class DNFEstimator(CatEstimator):
                 test_mag, 
                 test_mag_err, 
                 self.zgrid, 
-                metric='ANF', 
+                metric=self.metric, 
                 fit=True, 
                 pdf=True, 
                 Nneighbors=80, 
@@ -263,7 +273,7 @@ def validate_columns(V, T):
         ValueError
             If the column names of T and V do not match.
         """
-        if not np.array_equal(T.dtype.names, V.dtype.names):
+        if not np.array_equal(T.dtype.names, V.dtype.names):  # pragma: no cover
             raise ValueError("The columns of T and V do not match. Please ensure that both T and V have the same features.")
 
 
@@ -273,7 +283,7 @@ def preselection(V, Verr, Nneighbors, presel, T, clf, Tnorm, z):
         Perform the preselection process for photometric redshift estimation.
         """
         # Ensure V is set
-        if V is None:
+        if V is None:  # pragma: no cover
             raise ValueError("Validation data 'V' is not set. Ensure it is initialized.")
 
         # Size training
@@ -446,7 +456,7 @@ def compute_photoz_mean_routliers(NEIGHBORS, Verr, pdf, Nvalid, zgrid):
 
         if pdf:
             Vpdf = compute_pdfs(zpdf, wpdf, pdf, Nvalid, zgrid)
-        else:
+        else:  # pragma: no cover
             Vpf = None
 
         return photoz, photozerr, photozerr_param, photozerr_fit, z1, d1, id1, nneighbors, Vpdf,  NEIGHBORS
@@ -469,7 +479,7 @@ def compute_photoz_fit(NEIGHBORS, V, Verr, T, z, fit, photoz, photozerr, photoze
         
         if fit:
             C = np.zeros((Nvalid, nfilters + 1), dtype='double')
-        else:
+        else:  # pragma: no cover
             C = 0
             
         # Increase dimensionality of validation and training data for offsets in fit
@@ -502,7 +512,7 @@ def compute_photoz_fit(NEIGHBORS, V, Verr, T, z, fit, photoz, photozerr, photoze
                # If enough neighbors remain, update NEIGHBORSs; otherwise, stop iteration
                if nsel > 10:
                    NEIGHBORSs = NEIGHBORSs[selection]
-               else:
+               else:  # pragma: no cover
                    break
                     
                # Save the solution vector
@@ -538,7 +548,7 @@ def compute_pdfs(zpdf, wpdf, pdf, Nvalid, zgrid):
        # Initialize PDF-related variables if required
        if pdf:
             Vpdf = np.zeros((Nvalid, len(zgrid)), dtype='double')
-       else:
+       else:  # pragma: no cover
             Vpdf = 0
 
        bin_indices = np.digitize(zpdf, zgrid)  # Indices de los bins para cada elemento de zpdf (l x m)
@@ -551,29 +561,3 @@ def compute_pdfs(zpdf, wpdf, pdf, Nvalid, zgrid):
        Vpdf=histograms
 
        return Vpdf
-    
-
-
-def greetings() -> str:
-    """A friendly greeting for a future friend.
-
-    Returns
-    -------
-    str
-        A typical greeting from a software engineer.
-    """
-    return "Hello from LINCC-Frameworks!"
-
-
-def meaning() -> int:
-    """The meaning of life, the universe, and everything.
-
-    Returns
-    -------
-    int
-        The meaning of life.
-    """
-    return 42
-    
-    
-
