@@ -127,10 +127,13 @@ class DNFEstimator(CatEstimator):
         # set up selection mode metric choice
         if self.config.selection_mode == 0:
             self.metric = "ENF"
+            print("using metric ENF")
         elif self.config.selection_mode == 1:
             self.metric = "ANF"
+            print("using metric ANF")
         elif self.config.selection_mode == 2:
             self.metric = "DNF"
+            print("using metric DNF")
         else:
             raise ValueError("invalid value for config parameter selection_mode! Valid values are 0, 1, and 2")
 
