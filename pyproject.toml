@@ -16,7 +16,11 @@ classifiers = [
 ]
 dynamic = ["version"]
 
-dependencies = []
+dependencies = [
+	     "pz-rail-base>1.0.3",
+	     "qp-prob[full]",
+	     "scikit-learn",
+	     ]
 
 # On a mac, install optional dependencies with `pip install '.[dev]'` (include the single quotes)
 [project.optional-dependencies]
@@ -35,7 +39,7 @@ requires = [
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools_scm]
-write_to = "src/rail/example_package/_version.py"
+write_to = "src/rail/dnf/_version.py"
 
 [tool.pytest.ini_options]
 testpaths = [
