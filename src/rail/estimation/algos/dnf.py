@@ -1,7 +1,11 @@
 """
 Implementation of the DNF algorithm
+
+DNF (Directional Neighbourhood Fitting) is a nearest-neighbor approach for photometric redshift estimation developed at the CIEMAT (Centro de Investigaciones Energéticas, Medioambientales y Tecnológicas) at Madrid. DNF computes the photo-z hyperplane that best fits the directional neighbourhood of a photometric galaxy in the training sample.
+
 See https://academic.oup.com/mnras/article/459/3/3078/2595234
-for more details
+for more details.
+
 """
 
 # import math
@@ -16,7 +20,12 @@ from rail.core.common_params import SHARED_PARAMS
 
 def _computemagdata(data, column_names, err_names):
     """
-    make a dataset consisting of N-1 colors and errors in quadrature.******
+    Constructs a dataset containing N-1 magnitudes (or fluxes) and their corresponding 
+    errors combined in quadrature.
+
+    Returns:
+    - magdata: numpy array (N_samples, N_features) containing magnitude data.
+    - errdata: numpy array (N_samples, N_features) containing error data.
     """
     numcols = len(column_names)
     numerrcols = len(err_names)
@@ -26,7 +35,7 @@ def _computemagdata(data, column_names, err_names):
     magdata = np.array(data[column_names[0]])
     errdata = np.array(data[err_names[0]])
 
-    # Iteramos desde el segundo elemento
+    # Iterate through the remaining columns
     for i in range(1, numcols):
         tmpmag = np.array(data[column_names[i]])
         tmperr = np.array(data[err_names[i]])
@@ -38,7 +47,18 @@ def _computemagdata(data, column_names, err_names):
 
 
 class DNFInformer(CatInformer):
-    """Descripcion of the funcion ***
+    """
+    A class for photometric redshift estimation.
+
+    This class extends `CatInformer` and processes photometric data to train 
+    for estimating redshifts. It handles missing data by replacing 
+    non-detections with predefined magnitude limits and assigns errors accordingly.
+
+    Attributes:
+    - name (str): Identifier for the informer.
+    - config_options (dict): Configuration parameters inherited from `CatInformer`, 
+      including bands, error bands, redshift column, magnitude limits, and other 
+      relevant parameters.
     """
     name = 'DNFInformer'
     config_options = CatInformer.config_options.copy()
@@ -87,7 +107,24 @@ class DNFInformer(CatInformer):
 
 
 class DNFEstimator(CatEstimator):
-    """ Aqui habra que escribir una descripcion de la funcion"""
+    """
+    A class for estimating photometric redshifts using the DNF method.
+
+    This class extends `CatEstimator` and predicts redshifts based on photometric. 
+    It supports multiple selection  modes for redshift estimation, processes missing data, and generates probability 
+    density functions (PDFs) for photometric redshifts.
+
+    Attributes:
+    - name (str): Identifier for the estimator.
+    - config_options (dict): Configuration parameters inherited from `CatEstimator`, 
+      including redshift limits, number of bins, photometric bands, error bands, 
+      magnitude limits, and selection mode for redshift estimation.
+    
+    Metrics (selection_mode):
+    - ENF (1): Euclidean neighbourhood. It's a common distance metric used in kNN (k-Nearest Neighbors) for photometric redshift prediction.
+    - ANF (2): uses normalized inner product for more accurate photo-z predictions. It is particularly recommended when working with datasets containing more than four filters.
+    - DNF (3): combines Euclidean and angular metrics, improving accuracy, especially for larger neighborhoods, and maintaining proportionality in observable content.
+    """
 
     name = 'DNFEstimator'
     config_options = CatEstimator.config_options.copy()
@@ -99,17 +136,8 @@ class DNFEstimator(CatEstimator):
                           nondetect_val=SHARED_PARAMS,
                           mag_limits=SHARED_PARAMS,
                           redshift_col=SHARED_PARAMS,
-                          # radius=SHARED_PARAMS,
-                          # num_neighbors=SHARED_PARAMS,
-                          # seed=Param(int, 66, msg="random seed used in selection mode"),
-                          # ppf_value=Param(float, 0.68, msg="PPF value used in Mahalanobis distance"),
                           selection_mode=Param(int, 1, msg="select which mode to choose the redshift estimate:"
-                                               "0: ENF, 1: ANF, 2: DNF"),  # Habra que detallar mas que significa cada caso
-                          min_n=Param(int, 25, msg="minimum number of training galaxies to use"),  # ¿Necesitamos un minimo de galaxas?
-                          # min_thresh=Param(float, 0.0001, msg="minimum threshold cutoff"),  # Esto no tengo claro para que es
-                          # min_dist=Param(float, 0.0001, msg="minimum Mahalanobis distance"),  # Esto supongo que lo podemos eliminar
-                          bad_redshift_val=Param(float, 99., msg="redshift to assign bad redshifts"),
-                          bad_redshift_err=Param(float, 10., msg="Gauss error width to assign to bad redshifts")  # Habria que cambiar el msg ¿?
+                                               "0: ENF, 1: ANF, 2: DNF")
                           )
 
     def __init__(self, args, **kwargs):
@@ -117,7 +145,7 @@ class DNFEstimator(CatEstimator):
         Do Estimator specific initialization
         """
         self.truezs = None
-        self.model = None  # Asegurar este parametro y su necesidad
+        self.model = None 
         self.zgrid = None
         self.metric = "ANF"
         super().__init__(args, **kwargs)
@@ -147,7 +175,7 @@ class DNFEstimator(CatEstimator):
         self.clf = self.model['clf']
         self.Tnorm = self.model['train_norm']
 
-    def _process_chunk(self, start, end, data, first):  # hay que dejar este nombre porque es el que ponen todos
+    def _process_chunk(self, start, end, data, first): 
 
         print(f"Process {self.rank} estimating PZ PDF for rows {start:,} - {end:,}")
         # replace nondetects
@@ -309,9 +337,6 @@ def preselection(V, Verr, Nneighbors, presel, T, clf, Tnorm, z):
 
     # Store distances and indices
     de1 = Ndistances[:, 0]
-    # d1 = Ndistances[:, 0]
-    # Vclosest = Nindices[:, 0]
-    # id1 = Vclosest
 
     # Initialize NEIGHBORS array to store indices, distances, and redshifts
     NEIGHBORS = np.zeros(
