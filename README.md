@@ -45,6 +45,11 @@ The configurable parameters for `DNFEstimator` include:
 - `zmin`, `zmax`, `nzbins`: Float values defining the minimum and maximum redshift range and the number of bins for estimation of the PDFs.
 - `pdf_estimation`: Boolean; if True, computes a probability density function (PDF) for the redshift of each object.
 
+DNF calculates its own point estimate, `DNF_Z`, which is stored in the qp Ensemble `ancil` data. Also, DNF calculates other photo-zs called `DNF_ZN`.
+
+- `DNF_Z` represents the photometric redshift for each galaxy computed as the weighted average or hyperplane fit (depending on the option selected) for a set of neighbors determined by a specific metric (ENF, ANF, DNF) where the outliers are removed
+
+- `DNF_ZN` represents the photometric redshift using only the closest neighbor. It is mainly used for computing the redshift distributions.
 
 ## RAIL: Redshift Assessment Infrastructure Layers
 
