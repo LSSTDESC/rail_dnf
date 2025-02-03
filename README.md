@@ -13,7 +13,7 @@ If you have any questions or suggestions, please don't hesitate to contact us at
 The current version of the code for `RAIL`consists of a training stage, `DNFInformer` and a estimation stage `DNFEstimator`. `DNFInformer` is a class that preprocesses the protometric data, handles missing or non-detected values, and trains a firts basic k-Nearest Neighbors regressor for redshift prediction. The `DNFEstimator` calculates photometric redshifts based on an enhancement of Nearest Neighbor techniques. The class supports three main metrics for redshift estimation: ENF, ANF or DNF.
 
 - **ENF**: Euclidean neighbourhood. It's a common distance metric used in kNN (k-Nearest Neighbors) for photometric redshift prediction.
-- **ANF**: uses normalized inner product for more accurate photo-z predictions. It is particularly **recommended** when working with datasets containing more than four filters.
+- **ANF**: uses normalized inner product for more accurate photo-z predictions. It is particularly **recommended** when working with datasets containing more than four filters. Use normalized inner product for more accurate photo-z predictions when signal/noise is good enough.
 - **DNF**: combines Euclidean and angular metrics, improving accuracy, especially for larger neighborhoods, and maintaining proportionality in observable content.
 
 
