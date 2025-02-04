@@ -564,34 +564,7 @@ def compute_photoz_fit(NEIGHBORS, V, Verr, T, z, fit, photoz, photozerr, photoze
     return photoz, photozerr, photozerr_param, photozerr_fit, nneighbors, C
 
 
-def compute_pdfs(zpdf, wpdf, pdf, Nvalid, zgrid):
-    """
-       Compute the pdfs from neighbor redshifts and weights.
-    """
-    '''
-    print("esta es lo que guarda zpf")
-    print(zpdf[0])
-    print(len(zpdf[0]))
-    Nvalid = zpdf.shape[0]
-
-    # Initialize PDF-related variables if required
-    if pdf:
-        Vpdf = np.zeros((Nvalid, len(zgrid)), dtype='double')
-    else:  # pragma: no cover
-        Vpdf = 0
-
-    bin_indices = np.digitize(zpdf, zgrid)  # Indices de los bins para cada elemento de zpdf (l x m)
-
-    # Mask matrix for each bin (l x m x len(bins))
-    masks = (bin_indices[..., np.newaxis] == np.arange(len(zgrid)))
-
-    # mask per weights and sum by columns
-    histograms = np.einsum('ij,ijk->ik', wpdf, masks)
-    Vpdf = histograms
-
-    return Vpdf
-    '''
-    
+def compute_pdfs(zpdf, wpdf, pdf, Nvalid, zgrid):  
     """
     Compute the PDFs from neighbor redshifts and weights
 
