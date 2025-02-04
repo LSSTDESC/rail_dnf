@@ -568,7 +568,10 @@ def compute_pdfs(zpdf, wpdf, pdf, Nvalid, zgrid):
     """
        Compute the pdfs from neighbor redshifts and weights.
     """
-
+    '''
+    print("esta es lo que guarda zpf")
+    print(zpdf[0])
+    print(len(zpdf[0]))
     Nvalid = zpdf.shape[0]
 
     # Initialize PDF-related variables if required
@@ -587,3 +590,44 @@ def compute_pdfs(zpdf, wpdf, pdf, Nvalid, zgrid):
     Vpdf = histograms
 
     return Vpdf
+    '''
+    
+    """
+    Compute the PDFs from neighbor redshifts and weights
+
+    Parameters:
+    - zpdf: (Nvalid, Nneighbors) array with redshift values of neighbors.
+    - wpdf: (Nvalid, Nneighbors) array with corresponding weights.
+    - pdf: bool, if True, compute PDFs.
+    - Nvalid: int, number of galaxies.
+    - zgrid: (Nz,) array, redshift grid.
+
+    Returns:
+    - Vpdf: (Nvalid, Nz) array with probability distributions.
+    """
+    if not pdf:
+        return np.zeros((Nvalid, len(zgrid)))
+
+    Nz = len(zgrid)
+    Vpdf = np.zeros((Nvalid, Nz), dtype='double')
+
+    # Select only the first 5 neighbors
+    zpdf_top5 = zpdf[:, :5]
+    wpdf_top5 = wpdf[:, :5]
+       
+    # Expand dimensions to facilitate comparison with the grid
+    zpdf_exp = zpdf_top5[:, :, np.newaxis]  # (Nvalid, Nneighbors, 1)
+    zgrid_exp = zgrid[np.newaxis, np.newaxis, :]  # (1, 1, Nz)
+
+    # Create a weight matrix based on proximity to grid points
+    weights = np.exp(-((zpdf_exp - zgrid_exp) ** 2) / (2 * (0.05 ** 2)))  # Gaussian with sigma=0.05
+    weights *= wpdf_top5[:, :, np.newaxis]  # Apply the original weights
+
+    # Sum the weights for each grid point
+    Vpdf = weights.sum(axis=1)
+
+    # Normalize each row to sum to 1 (correct PDFs)
+    Vpdf /= Vpdf.sum(axis=1, keepdims=True) + 1e-12  # Avoid division by zero
+
+    return Vpdf
+
