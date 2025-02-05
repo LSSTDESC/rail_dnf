@@ -20,7 +20,7 @@ from rail.core.common_params import SHARED_PARAMS
 
 def _computemagdata(data, column_names, err_names):
     """
-    Constructs a dataset containing N-1 magnitudes (or fluxes) and their corresponding 
+    Constructs a dataset containing N-1 magnitudes (or fluxes) and their corresponding
     errors combined in quadrature.
 
     Returns:
@@ -50,14 +50,14 @@ class DNFInformer(CatInformer):
     """
     A class for photometric redshift estimation.
 
-    This class extends `CatInformer` and processes photometric data to train 
-    for estimating redshifts. It handles missing data by replacing 
+    This class extends `CatInformer` and processes photometric data to train
+    for estimating redshifts. It handles missing data by replacing
     non-detections with predefined magnitude limits and assigns errors accordingly.
 
     Attributes:
     - name (str): Identifier for the informer.
-    - config_options (dict): Configuration parameters inherited from `CatInformer`, 
-      including bands, error bands, redshift column, magnitude limits, and other 
+    - config_options (dict): Configuration parameters inherited from `CatInformer`,
+      including bands, error bands, redshift column, magnitude limits, and other
       relevant parameters.
     """
     name = 'DNFInformer'
@@ -110,16 +110,16 @@ class DNFEstimator(CatEstimator):
     """
     A class for estimating photometric redshifts using the DNF method.
 
-    This class extends `CatEstimator` and predicts redshifts based on photometric. 
-    It supports multiple selection  modes for redshift estimation, processes missing data, and generates probability 
+    This class extends `CatEstimator` and predicts redshifts based on photometric.
+    It supports multiple selection  modes for redshift estimation, processes missing data, and generates probability
     density functions (PDFs) for photometric redshifts.
 
     Attributes:
     - name (str): Identifier for the estimator.
-    - config_options (dict): Configuration parameters inherited from `CatEstimator`, 
-      including redshift limits, number of bins, photometric bands, error bands, 
+    - config_options (dict): Configuration parameters inherited from `CatEstimator`,
+      including redshift limits, number of bins, photometric bands, error bands,
       magnitude limits, and selection mode for redshift estimation.
-    
+
     Metrics (selection_mode):
     - ENF (1): Euclidean neighbourhood. It's a common distance metric used in kNN (k-Nearest Neighbors) for photometric redshift prediction.
     - ANF (2): uses normalized inner product for more accurate photo-z predictions. It is particularly recommended when working with datasets containing more than four filters.
@@ -145,7 +145,7 @@ class DNFEstimator(CatEstimator):
         Do Estimator specific initialization
         """
         self.truezs = None
-        self.model = None 
+        self.model = None
         self.zgrid = None
         self.metric = "ANF"
         super().__init__(args, **kwargs)
@@ -175,7 +175,7 @@ class DNFEstimator(CatEstimator):
         self.clf = self.model['clf']
         self.Tnorm = self.model['train_norm']
 
-    def _process_chunk(self, start, end, data, first): 
+    def _process_chunk(self, start, end, data, first):
 
         print(f"Process {self.rank} estimating PZ PDF for rows {start:,} - {end:,}")
         # replace nondetects
@@ -564,7 +564,7 @@ def compute_photoz_fit(NEIGHBORS, V, Verr, T, z, fit, photoz, photozerr, photoze
     return photoz, photozerr, photozerr_param, photozerr_fit, nneighbors, C
 
 
-def compute_pdfs(zpdf, wpdf, pdf, Nvalid, zgrid):  
+def compute_pdfs(zpdf, wpdf, pdf, Nvalid, zgrid):
     """
     Compute the PDFs from neighbor redshifts and weights
 
@@ -587,7 +587,7 @@ def compute_pdfs(zpdf, wpdf, pdf, Nvalid, zgrid):
     # Select only the first 5 neighbors
     zpdf_top5 = zpdf[:, :5]
     wpdf_top5 = wpdf[:, :5]
-       
+
     # Expand dimensions to facilitate comparison with the grid
     zpdf_exp = zpdf_top5[:, :, np.newaxis]  # (Nvalid, Nneighbors, 1)
     zgrid_exp = zgrid[np.newaxis, np.newaxis, :]  # (1, 1, Nz)
@@ -603,4 +603,3 @@ def compute_pdfs(zpdf, wpdf, pdf, Nvalid, zgrid):
     Vpdf /= Vpdf.sum(axis=1, keepdims=True) + 1e-12  # Avoid division by zero
 
     return Vpdf
-
