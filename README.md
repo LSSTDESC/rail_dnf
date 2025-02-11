@@ -2,7 +2,7 @@
 
 [![Template](https://img.shields.io/badge/Template-LINCC%20Frameworks%20Python%20Project%20Template-brightgreen)](https://lincc-ppt.readthedocs.io/en/latest/)
 [![codecov](https://codecov.io/gh/LSSTDESC/rail_dnf/branch/main/graph/badge.svg)](https://codecov.io/gh/LSSTDESC/rail_dnf)
-[![PyPI](https://img.shields.io/pypi/v/example_package?color=blue&logo=pypi&logoColor=white)](https://pypi.org/project/pz-rail-dnf/)
+[![PyPI](https://img.shields.io/pypi/v/pz-rail-dnf?color=blue&logo=pypi&logoColor=white)](https://pypi.org/project/pz-rail-dnf/)
 
 ## DNF: Directional Neighbourhood Fitting
 
