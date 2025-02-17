@@ -54,11 +54,6 @@ class DNFInformer(CatInformer):
     for estimating redshifts. It handles missing data by replacing
     non-detections with predefined magnitude limits and assigns errors accordingly.
 
-    Attributes:
-    - name (str): Identifier for the informer.
-    - config_options (dict): Configuration parameters inherited from `CatInformer`,
-      including bands, error bands, redshift column, magnitude limits, and other
-      relevant parameters.
     """
     name = 'DNFInformer'
     config_options = CatInformer.config_options.copy()
@@ -113,12 +108,6 @@ class DNFEstimator(CatEstimator):
     This class extends `CatEstimator` and predicts redshifts based on photometric.
     It supports multiple selection  modes for redshift estimation, processes missing data, and generates probability
     density functions (PDFs) for photometric redshifts.
-
-    Attributes:
-    - name (str): Identifier for the estimator.
-    - config_options (dict): Configuration parameters inherited from `CatEstimator`,
-      including redshift limits, number of bins, photometric bands, error bands,
-      magnitude limits, and selection mode for redshift estimation.
 
     Metrics (selection_mode):
     - ENF (1): Euclidean neighbourhood. It's a common distance metric used in kNN (k-Nearest Neighbors) for photometric redshift prediction.
