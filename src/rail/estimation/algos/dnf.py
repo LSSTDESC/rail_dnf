@@ -355,11 +355,19 @@ def metric_computation(V, NEIGHBORS, Ts, Tsnorm, metric, Nneighbors):
     elif metric == 'DNF':
         NEIGHBORS['distance'] = compute_directional_distance(V, Ts, Tsnorm)
 
-    # Sort the top Nneighbors
-    NEIGHBORS = np.sort(NEIGHBORS, order='distance', axis=1)
+    # Get the indices of the k nearest neighbors
+    partial_indices = np.argpartition(NEIGHBORS['distance'], Nneighbors, axis=1)[:, :Nneighbors]
 
-    # Select redshift of closer neighbors until n numbers of neighbors
-    NEIGHBORS = NEIGHBORS[:, :Nneighbors]
+    # Use those indexes to select neighbors
+    row_indices = np.arange(NEIGHBORS.shape[0])[:, None]
+    top_k_neighbors = NEIGHBORS[row_indices, partial_indices]
+
+    # Sort only those k neighbors (so they are sorted by distance)
+    sorted_order = np.argsort(top_k_neighbors['distance'], axis=1)
+    top_k_neighbors = np.take_along_axis(top_k_neighbors, sorted_order, axis=1)
+
+    # top_k_neighbors is equivalent to NEIGHBORS[:,:Nneighbors] sorted
+    NEIGHBORS = top_k_neighbors
 
     return NEIGHBORS
 
