@@ -210,7 +210,7 @@ class DNFEstimator(CatEstimator):
                                 nneighbors=nneighbors, de1=de1, d1=d1, id1=id1)  # , C=C, Vpdf=Vpdf
         qp_dnf.set_ancil(ancil_dictionary)
 
-        self._do_chunk_output(qp_dnf, start, end, first)
+        self._do_chunk_output(qp_dnf, start, end, first, data=data)
 
 
 def dnf_photometric_redshift(T, Terr, z, clf, Tnorm, V, Verr, zgrid, metric='ANF', fit=False, pdf=True, Nneighbors=80, presel=500):
