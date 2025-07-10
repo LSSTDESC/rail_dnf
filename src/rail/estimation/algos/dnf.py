@@ -527,8 +527,8 @@ def compute_photoz_fit(NEIGHBORS, V, Verr, T, z, fit, photoz, photozerr, photoze
     for i in range(0, Nvalid):
         NEIGHBORSs = NEIGHBORS[i]  # Get neighbors for the current sample
         nneighbors[i] = len(NEIGHBORSs)
-        if nneighbors[i] < nfilters:
-               continue
+        #if nneighbors[i] < nfilters:
+        #       continue
         
         # Perform iterative fitting
         for h in range(0, fitIterations):
