@@ -570,7 +570,7 @@ def compute_photoz_fit(NEIGHBORS, V, Verr, T, z, fit, photoz, photozerr, photoze
         if pdf:
             Vpdf=compute_pdfs_fit(photoz, photozerr, zgrid)
         else:
-            Vpdf=0  
+            Vpdf=None  
 
 
     return photoz, photozerr, photozerr_param, photozerr_fit, nneighbors, C, Vpdf
