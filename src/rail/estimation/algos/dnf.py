@@ -569,9 +569,9 @@ def compute_photoz_fit(NEIGHBORS, V, Verr, T, z, fit, photoz, photozerr, photoze
         photozerr_neig = np.std(NEIGHBORS['z'], axis=1)
         photozerr = np.sqrt(photozerr_param**2 + photozerr_fit**2 + photozerr_neig**2)
 
-        Vpdf = None
-        if pdf:
-            Vpdf = compute_pdfs_fit(photoz, photozerr, zgrid)
+    Vpdf = None
+    if pdf:
+        Vpdf = compute_pdfs_fit(photoz, photozerr, zgrid)
 
     return photoz, photozerr, photozerr_param, photozerr_fit, nneighbors, C, Vpdf
 
