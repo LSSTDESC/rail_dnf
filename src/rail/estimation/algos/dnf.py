@@ -199,7 +199,7 @@ class DNFEstimator(CatEstimator):
                 fit=True,
                 pdf=True,
                 Nneighbors=80,
-                presel=500
+                presel=4000
             )
 
         ancil_dictionary = dict()
@@ -213,7 +213,7 @@ class DNFEstimator(CatEstimator):
         self._do_chunk_output(qp_dnf, start, end, first, data=data)
 
 
-def dnf_photometric_redshift(T, Terr, z, clf, Tnorm, V, Verr, zgrid, metric='ANF', fit=False, pdf=True, Nneighbors=80, presel=500):
+def dnf_photometric_redshift(T, Terr, z, clf, Tnorm, V, Verr, zgrid, metric='ANF', fit=True, pdf=True, Nneighbors=80, presel=500):
     """
     Compute the photometric redshifts for the validation or science sample.
 
@@ -236,18 +236,21 @@ def dnf_photometric_redshift(T, Terr, z, clf, Tnorm, V, Verr, zgrid, metric='ANF
 
     C = 0  # coefficients by default
 
+    # Step 0: Manage NaNs
+    V, Verr = manage_nan(V, Verr)
+
     # Step 1: Preselection
     NEIGHBORS, Ts, Tsnorm, de1, Nvalid = preselection(V, Verr, Nneighbors, presel, T, clf, Tnorm, z)
 
     # Step 2: Metric computation
-    NEIGHBORS = metric_computation(V, NEIGHBORS, Ts, Tsnorm, metric, Nneighbors)
+    NEIGHBORS, z1, d1, id1 = metric_computation(V, NEIGHBORS, Ts, Tsnorm, metric, Nneighbors)
 
     # Step 3: Compute mean redshift removing outliers
-    photoz, photozerr, photozerr_param, photozerr_fit, z1, d1, id1, nneighbors, Vpdf, NEIGHBORS = compute_photoz_mean_routliers(NEIGHBORS, Verr, pdf, Nvalid, zgrid)
+    photoz, photozerr, photozerr_param, photozerr_fit, nneighbors, Vpdf, NEIGHBORS = compute_photoz_mean_routliers(NEIGHBORS, Verr, pdf, Nvalid, zgrid)
 
     # Step 4: Optional fitting of redshifts
     if fit:
-        photoz, photozerr, photozerr_param, photozerr_fit, nneighbors, C = compute_photoz_fit(
+        photoz, photozerr, photozerr_param, photozerr_fit, nneighbors, C, Vpdf = compute_photoz_fit(
             NEIGHBORS,
             V,
             Verr,
@@ -257,7 +260,9 @@ def dnf_photometric_redshift(T, Terr, z, clf, Tnorm, V, Verr, zgrid, metric='ANF
             photoz,
             photozerr,
             photozerr_param,
-            photozerr_fit
+            photozerr_fit,
+            pdf,
+            zgrid
         )
 
     # Return
@@ -294,6 +299,17 @@ def validate_columns(V, T):
     """
     if not np.array_equal(T.dtype.names, V.dtype.names):  # pragma: no cover
         raise ValueError("The columns of T and V do not match. Please ensure that both T and V have the same features.")
+
+
+def manage_nan(V, Verr):
+    '''
+    Change NaNs by 0 in V and Verr to use only proper measurements
+    '''
+    V[np.isnan(V)] = 0.0
+    V[np.isnan(Verr)] = 0.0
+    Verr[np.isnan(V)] = 0.0
+    Verr[np.isnan(Verr)] = 0.0
+    return V, Verr
 
 
 def preselection(V, Verr, Nneighbors, presel, T, clf, Tnorm, z):
@@ -369,7 +385,12 @@ def metric_computation(V, NEIGHBORS, Ts, Tsnorm, metric, Nneighbors):
     # top_k_neighbors is equivalent to NEIGHBORS[:,:Nneighbors] sorted
     NEIGHBORS = top_k_neighbors
 
-    return NEIGHBORS
+    # Store nearest redshift, distance and index
+    z1 = NEIGHBORS[:, 0]['z']
+    id1 = NEIGHBORS[:, 0]['index']
+    d1 = NEIGHBORS[:, 0]['distance']
+
+    return NEIGHBORS, z1, d1, id1
 
 
 def compute_euclidean_distance(V, Ts):
@@ -419,14 +440,10 @@ def compute_photoz_mean_routliers(NEIGHBORS, Verr, pdf, Nvalid, zgrid):
     zmatrix = NEIGHBORS['z']
     indices = NEIGHBORS['index']
 
-    # Store nearest redshift, distance and index
-    z1 = zmatrix[:, 0]
-    d1 = distances[:, 0]
-    id1 = indices[:, 0]
-
     # --- Outlier Detection and Weighting ---
     # Calculate mean distance for each sample
     median_absolute_deviation = distances.mean(axis=1)
+
     # Define the threshold for outlier detection
     threshold = median_absolute_deviation  # Adjust multiplier if needed (e.g., *2)
 
@@ -462,8 +479,8 @@ def compute_photoz_mean_routliers(NEIGHBORS, Verr, pdf, Nvalid, zgrid):
 
     # Compute the error based in the fit and the parameters
     Verrnorm = np.linalg.norm(Verr, axis=1)
-    photozerr_fit = 1.758 * np.sqrt(np.sum(zerrmatrix * wmatrix, axis=1))
-    photozerr_param = np.abs(0.2 * Verrnorm * (1.0 + photoz))
+    photozerr_fit = np.sqrt(np.sum(zerrmatrix * wmatrix, axis=1))
+    photozerr_param = np.std(NEIGHBORS['z'], axis=1)
 
     # Combine errors to calculate the total redshift error
     photozerr = np.sqrt(photozerr_param**2 + photozerr_fit**2)
@@ -481,10 +498,10 @@ def compute_photoz_mean_routliers(NEIGHBORS, Verr, pdf, Nvalid, zgrid):
     else:  # pragma: no cover
         Vpdf = None
 
-    return photoz, photozerr, photozerr_param, photozerr_fit, z1, d1, id1, nneighbors, Vpdf, NEIGHBORS
+    return photoz, photozerr, photozerr_param, photozerr_fit, nneighbors, Vpdf, NEIGHBORS
 
 
-def compute_photoz_fit(NEIGHBORS, V, Verr, T, z, fit, photoz, photozerr, photozerr_param, photozerr_fit):
+def compute_photoz_fit(NEIGHBORS, V, Verr, T, z, fit, photoz, photozerr, photozerr_param, photozerr_fit, pdf, zgrid):
     """
     Compute the photometric redshift fit by iteratively removing outliers.
     """
@@ -496,13 +513,13 @@ def compute_photoz_fit(NEIGHBORS, V, Verr, T, z, fit, photoz, photozerr, photoze
     fitIterations = 4
     badtag = 99
 
-    photozfit = badtag * np.zeros(Nvalid, dtype='double')
+    rss = badtag * np.zeros(Nvalid, dtype='double')
+    photoz = photoz
+    photozerr = photozerr
+    photozerr_param = photozerr_param
+    photozerr_fit = photozerr_fit
     nneighbors = np.zeros(Nvalid, dtype='double')
-
-    if fit:
-        C = np.zeros((Nvalid, nfilters + 1), dtype='double')
-    else:  # pragma: no cover
-        C = 0
+    C = np.zeros((Nvalid, nfilters + 1), dtype='double')
 
     # Increase dimensionality of validation and training data for offsets in fit
     Te = np.hstack([T, np.ones((Ntrain, 1), dtype='double')])
@@ -512,6 +529,9 @@ def compute_photoz_fit(NEIGHBORS, V, Verr, T, z, fit, photoz, photozerr, photoze
     for i in range(0, Nvalid):
         NEIGHBORSs = NEIGHBORS[i]  # Get neighbors for the current sample
         nneighbors[i] = len(NEIGHBORSs)
+        # if nneighbors[i] < nfilters:
+        #       continue
+
         # Perform iterative fitting
         for h in range(0, fitIterations):
             # Build the design matrix (A) and target vector (B) for the neighbors
@@ -529,36 +549,31 @@ def compute_photoz_fit(NEIGHBORS, V, Verr, T, z, fit, photoz, photozerr, photoze
 
             # Update the number of selected neighbors
             nsel = np.sum(selection)
-            nneighbors[i] = nsel
 
             # If enough neighbors remain, update NEIGHBORSs; otherwise, stop iteration
-            if nsel > 10:
-                NEIGHBORSs = NEIGHBORSs[selection]
-            else:  # pragma: no cover
+            if nsel < nfilters:  # pragma: no cover
                 break
+            NEIGHBORSs = NEIGHBORSs[selection]
+            nneighbors[i] = nsel
 
             # Save the solution vector
         C[i] = X[0]
 
         # Compute the photometric redshift fit for the current sample
-        photozfit[i] = np.inner(X[0], Ve[i])
-        nneighbors[i] = NEIGHBORSs.shape[0]
+        photoz[i] = np.inner(X[0], Ve[i])
+        rss[i] = np.sum(X[1]**2)
+
         # Calculate error metrics
-        if X[1].size != 0:      # Check if residuals from the least squares solution exist
-            # Compute the error based in parameters
-            param_error = np.abs(X[0][:-1]) * Verr[i]
-            photozerr_param[i] = np.sqrt(np.sum(param_error**2))  # ,axis=1))
+        photozerr_param = np.sqrt(np.sum((C[:, :-1] * Verr) ** 2, axis=1))
+        photozerr_fit = np.sqrt(rss / (nneighbors - nfilters))
+        photozerr_neig = np.std(NEIGHBORS['z'], axis=1)
+        photozerr = np.sqrt(photozerr_param**2 + photozerr_fit**2 + photozerr_neig**2)
 
-            # Compute the error based in fit
-            photozerr_fit[i] = np.sqrt(X[1] / nneighbors[i])
+    Vpdf = None
+    if pdf:
+        Vpdf = compute_pdfs_fit(photoz, photozerr, zgrid)
 
-            # Combine errors to get total redshfit error
-            photozerr[i] = np.sqrt(photozerr_param[i]**2 + photozerr_fit[i]**2)
-
-    # Assign the computed redshift fits to the output variable
-    photoz = photozfit
-
-    return photoz, photozerr, photozerr_param, photozerr_fit, nneighbors, C
+    return photoz, photozerr, photozerr_param, photozerr_fit, nneighbors, C, Vpdf
 
 
 def compute_pdfs(zpdf, wpdf, pdf, Nvalid, zgrid):
@@ -600,3 +615,31 @@ def compute_pdfs(zpdf, wpdf, pdf, Nvalid, zgrid):
     Vpdf /= Vpdf.sum(axis=1, keepdims=True) + 1e-12  # Avoid division by zero
 
     return Vpdf
+
+
+def compute_pdfs_fit(photoz, photozerr, zgrid):
+    """
+    Computed the gaussian PDFs for the objects
+
+    Parameters:
+    - photoz : z mean values
+    - photozzerr : zerr values
+    - zgrid: grid
+
+    Return:
+    ---------
+    pdfs : np.ndarray
+
+    """
+    z = np.asarray(photoz)[:, None]
+    zerr = np.asarray(photozerr)[:, None]
+
+    # Direct formula of the Gaussian
+    norm_factor = 1 / (np.sqrt(2 * np.pi) * zerr)
+    exponent = -0.5 * ((zgrid - z) / zerr) ** 2
+    pdfs = norm_factor * np.exp(exponent)
+
+    # Normalization using numerical integration
+    pdfs /= np.trapz(pdfs, zgrid, axis=1)[:, None]
+
+    return pdfs
