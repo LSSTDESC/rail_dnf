@@ -199,7 +199,7 @@ class DNFEstimator(CatEstimator):
                 fit=True,
                 pdf=True,
                 Nneighbors=80,
-                presel=4000
+                presel=500
             )
 
         ancil_dictionary = dict()
@@ -213,7 +213,7 @@ class DNFEstimator(CatEstimator):
         self._do_chunk_output(qp_dnf, start, end, first, data=data)
 
 
-def dnf_photometric_redshift(T, Terr, z, clf, Tnorm, V, Verr, zgrid, metric='ANF', fit=True, pdf=True, Nneighbors=80, presel=4000):
+def dnf_photometric_redshift(T, Terr, z, clf, Tnorm, V, Verr, zgrid, metric='ANF', fit=True, pdf=True, Nneighbors=80, presel=500):
     """
     Compute the photometric redshifts for the validation or science sample.
 
