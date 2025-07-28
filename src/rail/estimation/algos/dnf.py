@@ -198,7 +198,7 @@ class DNFEstimator(CatEstimator):
                 metric=self.metric,
                 fit=True,
                 pdf=True,
-                Nneighbors=120,
+                Nneighbors=80,
                 presel=4000
             )
 
