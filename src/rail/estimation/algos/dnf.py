@@ -11,11 +11,12 @@ for more details.
 # import math
 import numpy as np
 import qp
-from sklearn import neighbors
+
 # from scipy.stats import chi2
 from ceci.config import StageParameter as Param
-from rail.estimation.estimator import CatEstimator, CatInformer
 from rail.core.common_params import SHARED_PARAMS
+from rail.estimation.estimator import CatEstimator, CatInformer
+from sklearn import neighbors
 
 
 def _computemagdata(data, column_names, err_names):
@@ -55,26 +56,29 @@ class DNFInformer(CatInformer):
     non-detections with predefined magnitude limits and assigns errors accordingly.
 
     """
-    name = 'DNFInformer'
+
+    name = "DNFInformer"
     config_options = CatInformer.config_options.copy()
-    config_options.update(bands=SHARED_PARAMS,
-                          err_bands=SHARED_PARAMS,
-                          redshift_col=SHARED_PARAMS,
-                          mag_limits=SHARED_PARAMS,
-                          nondetect_val=SHARED_PARAMS,
-                          hdf5_groupname=SHARED_PARAMS)
+    config_options.update(
+        bands=SHARED_PARAMS,
+        err_bands=SHARED_PARAMS,
+        redshift_col=SHARED_PARAMS,
+        mag_limits=SHARED_PARAMS,
+        nondetect_val=SHARED_PARAMS,
+        hdf5_groupname=SHARED_PARAMS,
+    )
 
     def __init__(self, args, **kwargs):
-        """ Constructor
-        Do CatInformer specific initialization, then check on bands """
+        """Constructor
+        Do CatInformer specific initialization, then check on bands"""
         super().__init__(args, **kwargs)
 
     def run(self):
         if self.config.hdf5_groupname:
-            training_data = self.get_data('input')[self.config.hdf5_groupname]
+            training_data = self.get_data("input")[self.config.hdf5_groupname]
         else:
-            training_data = self.get_data('input')  # pragma: no cover
-        specz = np.array(training_data[self.config['redshift_col']])
+            training_data = self.get_data("input")  # pragma: no cover
+        specz = np.array(training_data[self.config["redshift_col"]])
 
         # replace nondetects
         for col, err in zip(self.config.bands, self.config.err_bands):
@@ -84,11 +88,13 @@ class DNFInformer(CatInformer):
                 mask = np.isclose(training_data[col], self.config.nondetect_val)
 
             training_data[col][mask] = self.config.mag_limits[col]
-            training_data[err][mask] = 1.0  # could also put 0.757 for 1 sigma, but slightly inflated seems good
+            training_data[err][
+                mask
+            ] = 1.0  # could also put 0.757 for 1 sigma, but slightly inflated seems good
 
-        mag_data, mag_err = _computemagdata(training_data,
-                                            self.config.bands,
-                                            self.config.err_bands)
+        mag_data, mag_err = _computemagdata(
+            training_data, self.config.bands, self.config.err_bands
+        )
 
         # Training euclidean metric
         clf = neighbors.KNeighborsRegressor()
@@ -97,8 +103,14 @@ class DNFInformer(CatInformer):
         # Training variables
         Tnorm = np.linalg.norm(mag_data, axis=1)
 
-        self.model = dict(train_mag=mag_data, train_err=mag_err, truez=specz, clf=clf, train_norm=Tnorm)
-        self.add_data('model', self.model)
+        self.model = dict(
+            train_mag=mag_data,
+            train_err=mag_err,
+            truez=specz,
+            clf=clf,
+            train_norm=Tnorm,
+        )
+        self.add_data("model", self.model)
 
 
 class DNFEstimator(CatEstimator):
@@ -115,22 +127,27 @@ class DNFEstimator(CatEstimator):
     - DNF (3): combines Euclidean and angular metrics, improving accuracy, especially for larger neighborhoods, and maintaining proportionality in observable content.
     """
 
-    name = 'DNFEstimator'
+    name = "DNFEstimator"
     config_options = CatEstimator.config_options.copy()
-    config_options.update(zmin=SHARED_PARAMS,
-                          zmax=SHARED_PARAMS,
-                          nzbins=SHARED_PARAMS,
-                          bands=SHARED_PARAMS,
-                          err_bands=SHARED_PARAMS,
-                          nondetect_val=SHARED_PARAMS,
-                          mag_limits=SHARED_PARAMS,
-                          redshift_col=SHARED_PARAMS,
-                          selection_mode=Param(int, 1, msg="select which mode to choose the redshift estimate:"
-                                               "0: ENF, 1: ANF, 2: DNF")
-                          )
+    config_options.update(
+        zmin=SHARED_PARAMS,
+        zmax=SHARED_PARAMS,
+        nzbins=SHARED_PARAMS,
+        bands=SHARED_PARAMS,
+        err_bands=SHARED_PARAMS,
+        nondetect_val=SHARED_PARAMS,
+        mag_limits=SHARED_PARAMS,
+        redshift_col=SHARED_PARAMS,
+        selection_mode=Param(
+            int,
+            1,
+            msg="select which mode to choose the redshift estimate:"
+            "0: ENF, 1: ANF, 2: DNF",
+        ),
+    )
 
     def __init__(self, args, **kwargs):
-        """ Constructor:
+        """Constructor:
         Do Estimator specific initialization
         """
         self.truezs = None
@@ -152,17 +169,19 @@ class DNFEstimator(CatEstimator):
             self.metric = "DNF"
             print("using metric DNF")
         else:
-            raise ValueError("invalid value for config parameter selection_mode! Valid values are 0, 1, and 2")
+            raise ValueError(
+                "invalid value for config parameter selection_mode! Valid values are 0, 1, and 2"
+            )
 
     def open_model(self, **kwargs):
         CatEstimator.open_model(self, **kwargs)
         if self.model is None:  # pragma: no cover
             return
-        self.train_mag = self.model['train_mag']
-        self.train_err = self.model['train_err']
-        self.truez = self.model['truez']
-        self.clf = self.model['clf']
-        self.Tnorm = self.model['train_norm']
+        self.train_mag = self.model["train_mag"]
+        self.train_err = self.model["train_err"]
+        self.truez = self.model["truez"]
+        self.clf = self.model["clf"]
+        self.Tnorm = self.model["train_norm"]
 
     def _process_chunk(self, start, end, data, first):
 
@@ -175,45 +194,80 @@ class DNFEstimator(CatEstimator):
                 mask = np.isclose(data[col], self.config.nondetect_val)
 
             data[col][mask] = self.config.mag_limits[col]
-            data[err][mask] = 1.0  # could also put 0.757 for 1 sigma, but slightly inflated seems good
+            data[err][
+                mask
+            ] = 1.0  # could also put 0.757 for 1 sigma, but slightly inflated seems good
 
-        test_mag, test_mag_err = _computemagdata(data,
-                                                 self.config.bands,
-                                                 self.config.err_bands)
+        test_mag, test_mag_err = _computemagdata(
+            data, self.config.bands, self.config.err_bands
+        )
         num_gals = test_mag.shape[0]
         ncols = test_mag.shape[1]
 
         self.zgrid = np.linspace(self.config.zmin, self.config.zmax, self.config.nzbins)
 
-        photoz, photozerr, photozerr_param, photozerr_fit, z1, nneighbors, de1, d1, id1, C, pdfs = \
-            dnf_photometric_redshift(
-                self.train_mag,
-                self.train_err,
-                self.truez,
-                self.clf,
-                self.Tnorm,
-                test_mag,
-                test_mag_err,
-                self.zgrid,
-                metric=self.metric,
-                fit=True,
-                pdf=True,
-                Nneighbors=80,
-                presel=4000
-            )
+        (
+            photoz,
+            photozerr,
+            photozerr_param,
+            photozerr_fit,
+            z1,
+            nneighbors,
+            de1,
+            d1,
+            id1,
+            C,
+            pdfs,
+        ) = dnf_photometric_redshift(
+            self.train_mag,
+            self.train_err,
+            self.truez,
+            self.clf,
+            self.Tnorm,
+            test_mag,
+            test_mag_err,
+            self.zgrid,
+            metric=self.metric,
+            fit=True,
+            pdf=True,
+            Nneighbors=80,
+            presel=4000,
+        )
 
         ancil_dictionary = dict()
         qp_dnf = qp.Ensemble(qp.interp, data=dict(xvals=self.zgrid, yvals=pdfs))
 
-        ancil_dictionary.update(DNF_Z=photoz, photozerr=photozerr,
-                                photozerr_param=photozerr_param, photozerr_fit=photozerr_fit, DNF_ZN=z1,
-                                nneighbors=nneighbors, de1=de1, d1=d1, id1=id1)  # , C=C, Vpdf=Vpdf
+        ancil_dictionary.update(
+            DNF_Z=photoz,
+            photozerr=photozerr,
+            photozerr_param=photozerr_param,
+            photozerr_fit=photozerr_fit,
+            DNF_ZN=z1,
+            nneighbors=nneighbors,
+            de1=de1,
+            d1=d1,
+            id1=id1,
+        )  # , C=C, Vpdf=Vpdf
         qp_dnf.set_ancil(ancil_dictionary)
 
         self._do_chunk_output(qp_dnf, start, end, first, data=data)
 
 
-def dnf_photometric_redshift(T, Terr, z, clf, Tnorm, V, Verr, zgrid, metric='ANF', fit=True, pdf=True, Nneighbors=80, presel=500):
+def dnf_photometric_redshift(
+    T,
+    Terr,
+    z,
+    clf,
+    Tnorm,
+    V,
+    Verr,
+    zgrid,
+    metric="ANF",
+    fit=True,
+    pdf=True,
+    Nneighbors=80,
+    presel=500,
+):
     """
     Compute the photometric redshifts for the validation or science sample.
 
@@ -240,29 +294,37 @@ def dnf_photometric_redshift(T, Terr, z, clf, Tnorm, V, Verr, zgrid, metric='ANF
     V, Verr = manage_nan(V, Verr)
 
     # Step 1: Preselection
-    NEIGHBORS, Ts, Tsnorm, de1, Nvalid = preselection(V, Verr, Nneighbors, presel, T, clf, Tnorm, z)
+    NEIGHBORS, Ts, Tsnorm, de1, Nvalid = preselection(
+        V, Verr, Nneighbors, presel, T, clf, Tnorm, z
+    )
 
     # Step 2: Metric computation
-    NEIGHBORS, z1, d1, id1 = metric_computation(V, NEIGHBORS, Ts, Tsnorm, metric, Nneighbors)
+    NEIGHBORS, z1, d1, id1 = metric_computation(
+        V, NEIGHBORS, Ts, Tsnorm, metric, Nneighbors
+    )
 
     # Step 3: Compute mean redshift removing outliers
-    photoz, photozerr, photozerr_param, photozerr_fit, nneighbors, Vpdf, NEIGHBORS = compute_photoz_mean_routliers(NEIGHBORS, Verr, pdf, Nvalid, zgrid)
+    photoz, photozerr, photozerr_param, photozerr_fit, nneighbors, Vpdf, NEIGHBORS = (
+        compute_photoz_mean_routliers(NEIGHBORS, Verr, pdf, Nvalid, zgrid)
+    )
 
     # Step 4: Optional fitting of redshifts
     if fit:
-        photoz, photozerr, photozerr_param, photozerr_fit, nneighbors, C, Vpdf = compute_photoz_fit(
-            NEIGHBORS,
-            V,
-            Verr,
-            T,
-            z,
-            fit,
-            photoz,
-            photozerr,
-            photozerr_param,
-            photozerr_fit,
-            pdf,
-            zgrid
+        photoz, photozerr, photozerr_param, photozerr_fit, nneighbors, C, Vpdf = (
+            compute_photoz_fit(
+                NEIGHBORS,
+                V,
+                Verr,
+                T,
+                z,
+                fit,
+                photoz,
+                photozerr,
+                photozerr_param,
+                photozerr_fit,
+                pdf,
+                zgrid,
+            )
         )
 
     # Return
@@ -298,13 +360,15 @@ def validate_columns(V, T):
       If the column names of T and V do not match.
     """
     if not np.array_equal(T.dtype.names, V.dtype.names):  # pragma: no cover
-        raise ValueError("The columns of T and V do not match. Please ensure that both T and V have the same features.")
+        raise ValueError(
+            "The columns of T and V do not match. Please ensure that both T and V have the same features."
+        )
 
 
 def manage_nan(V, Verr):
-    '''
+    """
     Change NaNs by 0 in V and Verr to use only proper measurements
-    '''
+    """
     V[np.isnan(V)] = 0.0
     V[np.isnan(Verr)] = 0.0
     Verr[np.isnan(V)] = 0.0
@@ -328,7 +392,7 @@ def preselection(V, Verr, Nneighbors, presel, T, clf, Tnorm, z):
     validate_columns(V, T)
 
     Nvalid = V.shape[0]
-    nneighbors = np.full(Nvalid, Nneighbors, dtype='int')
+    nneighbors = np.full(Nvalid, Nneighbors, dtype="int")
 
     # Compute distances and indices for preselected neighbors
     Ndistances, Nindices = clf.kneighbors(V, n_neighbors=Nneighbors_presel)
@@ -346,11 +410,11 @@ def preselection(V, Verr, Nneighbors, presel, T, clf, Tnorm, z):
     # Initialize NEIGHBORS array to store indices, distances, and redshifts
     NEIGHBORS = np.zeros(
         (Nvalid, Nneighbors_presel),
-        dtype=[('index', 'i4'), ('distance', 'f8'), ('z', 'f8')]
+        dtype=[("index", "i4"), ("distance", "f8"), ("z", "f8")],
     )
-    NEIGHBORS['index'] = Nindices
-    NEIGHBORS['distance'] = Ndistances
-    NEIGHBORS['z'] = z[Nindices]
+    NEIGHBORS["index"] = Nindices
+    NEIGHBORS["distance"] = Ndistances
+    NEIGHBORS["z"] = z[Nindices]
 
     # Extract training preselection data
     Ts = T[Nindices]
@@ -364,31 +428,33 @@ def metric_computation(V, NEIGHBORS, Ts, Tsnorm, metric, Nneighbors):
     Compute distances based on the selected metric, sort neighbors, and store the closest neighbors.
     """
     # Compute distances based on the chosen metric
-    if metric == 'ENF':
-        NEIGHBORS['distance'] = compute_euclidean_distance(V, Ts)
-    elif metric == 'ANF':
-        NEIGHBORS['distance'] = compute_angular_distance(V, Ts, Tsnorm)
-    elif metric == 'DNF':
-        NEIGHBORS['distance'] = compute_directional_distance(V, Ts, Tsnorm)
+    if metric == "ENF":
+        NEIGHBORS["distance"] = compute_euclidean_distance(V, Ts)
+    elif metric == "ANF":
+        NEIGHBORS["distance"] = compute_angular_distance(V, Ts, Tsnorm)
+    elif metric == "DNF":
+        NEIGHBORS["distance"] = compute_directional_distance(V, Ts, Tsnorm)
 
     # Get the indices of the k nearest neighbors
-    partial_indices = np.argpartition(NEIGHBORS['distance'], Nneighbors, axis=1)[:, :Nneighbors]
+    partial_indices = np.argpartition(NEIGHBORS["distance"], Nneighbors, axis=1)[
+        :, :Nneighbors
+    ]
 
     # Use those indexes to select neighbors
     row_indices = np.arange(NEIGHBORS.shape[0])[:, None]
     top_k_neighbors = NEIGHBORS[row_indices, partial_indices]
 
     # Sort only those k neighbors (so they are sorted by distance)
-    sorted_order = np.argsort(top_k_neighbors['distance'], axis=1)
+    sorted_order = np.argsort(top_k_neighbors["distance"], axis=1)
     top_k_neighbors = np.take_along_axis(top_k_neighbors, sorted_order, axis=1)
 
     # top_k_neighbors is equivalent to NEIGHBORS[:,:Nneighbors] sorted
     NEIGHBORS = top_k_neighbors
 
     # Store nearest redshift, distance and index
-    z1 = NEIGHBORS[:, 0]['z']
-    id1 = NEIGHBORS[:, 0]['index']
-    d1 = NEIGHBORS[:, 0]['distance']
+    z1 = NEIGHBORS[:, 0]["z"]
+    id1 = NEIGHBORS[:, 0]["index"]
+    d1 = NEIGHBORS[:, 0]["distance"]
 
     return NEIGHBORS, z1, d1, id1
 
@@ -436,9 +502,9 @@ def compute_photoz_mean_routliers(NEIGHBORS, Verr, pdf, Nvalid, zgrid):
     """
 
     # Extract distances and redshifts from neighbors
-    distances = NEIGHBORS['distance']
-    zmatrix = NEIGHBORS['z']
-    indices = NEIGHBORS['index']
+    distances = NEIGHBORS["distance"]
+    zmatrix = NEIGHBORS["z"]
+    indices = NEIGHBORS["index"]
 
     # --- Outlier Detection and Weighting ---
     # Calculate mean distance for each sample
@@ -465,7 +531,9 @@ def compute_photoz_mean_routliers(NEIGHBORS, Verr, pdf, Nvalid, zgrid):
     # Normalize weights by the sum of inverse distances per sample
     row_sum = inverse_distances.sum(axis=1, keepdims=True)
     wmatrix = inverse_distances / row_sum
-    wmatrix = np.nan_to_num(wmatrix)  # Handle potential NaN values from division by zero
+    wmatrix = np.nan_to_num(
+        wmatrix
+    )  # Handle potential NaN values from division by zero
 
     # --- Photometric Redshift Computation ---
     # Compute the weighted mean redshift for each sample
@@ -480,7 +548,7 @@ def compute_photoz_mean_routliers(NEIGHBORS, Verr, pdf, Nvalid, zgrid):
     # Compute the error based in the fit and the parameters
     Verrnorm = np.linalg.norm(Verr, axis=1)
     photozerr_fit = np.sqrt(np.sum(zerrmatrix * wmatrix, axis=1))
-    photozerr_param = np.std(NEIGHBORS['z'], axis=1)
+    photozerr_param = np.std(NEIGHBORS["z"], axis=1)
 
     # Combine errors to calculate the total redshift error
     photozerr = np.sqrt(photozerr_param**2 + photozerr_fit**2)
@@ -498,10 +566,31 @@ def compute_photoz_mean_routliers(NEIGHBORS, Verr, pdf, Nvalid, zgrid):
     else:  # pragma: no cover
         Vpdf = None
 
-    return photoz, photozerr, photozerr_param, photozerr_fit, nneighbors, Vpdf, NEIGHBORS
+    return (
+        photoz,
+        photozerr,
+        photozerr_param,
+        photozerr_fit,
+        nneighbors,
+        Vpdf,
+        NEIGHBORS,
+    )
 
 
-def compute_photoz_fit(NEIGHBORS, V, Verr, T, z, fit, photoz, photozerr, photozerr_param, photozerr_fit, pdf, zgrid):
+def compute_photoz_fit(
+    NEIGHBORS,
+    V,
+    Verr,
+    T,
+    z,
+    fit,
+    photoz,
+    photozerr,
+    photozerr_param,
+    photozerr_fit,
+    pdf,
+    zgrid,
+):
     """
     Compute the photometric redshift fit by iteratively removing outliers.
     """
@@ -513,17 +602,17 @@ def compute_photoz_fit(NEIGHBORS, V, Verr, T, z, fit, photoz, photozerr, photoze
     fitIterations = 4
     badtag = 99
 
-    rss = badtag * np.zeros(Nvalid, dtype='double')
+    rss = badtag * np.zeros(Nvalid, dtype="double")
     photoz = photoz
     photozerr = photozerr
     photozerr_param = photozerr_param
     photozerr_fit = photozerr_fit
-    nneighbors = np.zeros(Nvalid, dtype='double')
-    C = np.zeros((Nvalid, nfilters + 1), dtype='double')
+    nneighbors = np.zeros(Nvalid, dtype="double")
+    C = np.zeros((Nvalid, nfilters + 1), dtype="double")
 
     # Increase dimensionality of validation and training data for offsets in fit
-    Te = np.hstack([T, np.ones((Ntrain, 1), dtype='double')])
-    Ve = np.hstack([V, np.ones((Nvalid, 1), dtype='double')])
+    Te = np.hstack([T, np.ones((Ntrain, 1), dtype="double")])
+    Ve = np.hstack([V, np.ones((Nvalid, 1), dtype="double")])
 
     # Loop over all validation samples
     for i in range(0, Nvalid):
@@ -535,8 +624,8 @@ def compute_photoz_fit(NEIGHBORS, V, Verr, T, z, fit, photoz, photozerr, photoze
         # Perform iterative fitting
         for h in range(0, fitIterations):
             # Build the design matrix (A) and target vector (B) for the neighbors
-            A = Te[NEIGHBORSs['index']]
-            B = z[NEIGHBORSs['index']]
+            A = Te[NEIGHBORSs["index"]]
+            B = z[NEIGHBORSs["index"]]
 
             # Solve the least squares problem
             X = np.linalg.lstsq(A, B, rcond=-1)
@@ -545,7 +634,7 @@ def compute_photoz_fit(NEIGHBORS, V, Verr, T, z, fit, photoz, photozerr, photoze
             # Identify outliers using a 3-sigma threshold
             abs_residuals = np.abs(residuals)
             sigma3 = 3.0 * np.mean(abs_residuals)
-            selection = (abs_residuals < sigma3)
+            selection = abs_residuals < sigma3
 
             # Update the number of selected neighbors
             nsel = np.sum(selection)
@@ -561,12 +650,12 @@ def compute_photoz_fit(NEIGHBORS, V, Verr, T, z, fit, photoz, photozerr, photoze
 
         # Compute the photometric redshift fit for the current sample
         photoz[i] = np.inner(X[0], Ve[i])
-        rss[i] = np.sum(X[1]**2)
+        rss[i] = np.sum(X[1] ** 2)
 
         # Calculate error metrics
         photozerr_param = np.sqrt(np.sum((C[:, :-1] * Verr) ** 2, axis=1))
         photozerr_fit = np.sqrt(rss / (nneighbors - nfilters))
-        photozerr_neig = np.std(NEIGHBORS['z'], axis=1)
+        photozerr_neig = np.std(NEIGHBORS["z"], axis=1)
         photozerr = np.sqrt(photozerr_param**2 + photozerr_fit**2 + photozerr_neig**2)
 
     Vpdf = None
@@ -594,7 +683,7 @@ def compute_pdfs(zpdf, wpdf, pdf, Nvalid, zgrid):
         return np.zeros((Nvalid, len(zgrid)))
 
     Nz = len(zgrid)
-    Vpdf = np.zeros((Nvalid, Nz), dtype='double')
+    Vpdf = np.zeros((Nvalid, Nz), dtype="double")
 
     # Select only the first 5 neighbors
     zpdf_top5 = zpdf[:, :5]
@@ -605,7 +694,9 @@ def compute_pdfs(zpdf, wpdf, pdf, Nvalid, zgrid):
     zgrid_exp = zgrid[np.newaxis, np.newaxis, :]  # (1, 1, Nz)
 
     # Create a weight matrix based on proximity to grid points
-    weights = np.exp(-((zpdf_exp - zgrid_exp) ** 2) / (2 * (0.05 ** 2)))  # Gaussian with sigma=0.05
+    weights = np.exp(
+        -((zpdf_exp - zgrid_exp) ** 2) / (2 * (0.05**2))
+    )  # Gaussian with sigma=0.05
     weights *= wpdf_top5[:, :, np.newaxis]  # Apply the original weights
 
     # Sum the weights for each grid point
