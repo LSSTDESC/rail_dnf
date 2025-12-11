@@ -59,6 +59,7 @@ class DNFInformer(CatInformer):
 
     name = "DNFInformer"
     entrypoint_function = "inform"  # the user-facing science function for this class
+    interactive_function = "dnf_informer"
     config_options = CatInformer.config_options.copy()
     config_options.update(
         bands=SHARED_PARAMS,
@@ -130,6 +131,7 @@ class DNFEstimator(CatEstimator):
 
     name = "DNFEstimator"
     entrypoint_function = "estimate"  # the user-facing science function for this class
+    interactive_function = "dnf_estimator"
     config_options = CatEstimator.config_options.copy()
     config_options.update(
         zmin=SHARED_PARAMS,
