@@ -683,7 +683,7 @@ def compute_pdfs(zpdf, wpdf, pdf, Nvalid, zgrid):
     Returns:
     - Vpdf: (Nvalid, Nz) array with probability distributions.
     """
-    if not pdf:
+    if not pdf:  # pragma: no cover
         return np.zeros((Nvalid, len(zgrid)))
 
     Nz = len(zgrid)
