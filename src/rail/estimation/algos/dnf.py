@@ -735,6 +735,6 @@ def compute_pdfs_fit(photoz, photozerr, zgrid):
     pdfs = norm_factor * np.exp(exponent)
 
     # Normalization using numerical integration
-    pdfs /= np.trapz(pdfs, zgrid, axis=1)[:, None]
+    pdfs /= np.trapezoid(pdfs, zgrid, axis=1)[:, None]
 
     return pdfs
