@@ -656,11 +656,11 @@ def compute_photoz_fit(
         photoz[i] = np.inner(X[0], Ve[i])
         rss[i] = np.sum(X[1] ** 2)
 
-        # Calculate error metrics
-        photozerr_param = np.sqrt(np.sum((C[:, :-1] * Verr) ** 2, axis=1))
-        photozerr_fit = np.sqrt(rss / (nneighbors - nfilters))
-        photozerr_neig = np.std(NEIGHBORS["z"], axis=1)
-        photozerr = np.sqrt(photozerr_param**2 + photozerr_fit**2 + photozerr_neig**2)
+    # Calculate error metrics
+    photozerr_param = np.sqrt(np.sum((C[:, :-1] * Verr) ** 2, axis=1))
+    photozerr_fit = np.sqrt(rss / (nneighbors - nfilters))
+    photozerr_neig = np.std(NEIGHBORS["z"], axis=1)
+    photozerr = np.sqrt(photozerr_param**2 + photozerr_fit**2 + photozerr_neig**2)
 
     Vpdf = None
     if pdf:
