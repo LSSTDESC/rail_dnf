@@ -659,8 +659,9 @@ def compute_photoz_fit(
     # Calculate error metrics
     photozerr_param = np.sqrt(np.sum((C[:, :-1] * Verr) ** 2, axis=1))
     photozerr_fit = np.sqrt(rss / (nneighbors - nfilters))
-    photozerr_neig = np.std(NEIGHBORS["z"], axis=1)
-    photozerr = np.sqrt(photozerr_param**2 + photozerr_fit**2 + photozerr_neig**2)
+    ## photozerr_neig = np.std(NEIGHBORS["z"], axis=1)
+    # Note: Neighbor scatter is only required when photozerr is poorly calibrated.
+    photozerr = np.sqrt(photozerr_param**2 + photozerr_fit**2)  ## + photozerr_neig**2)
 
     Vpdf = None
     if pdf:
