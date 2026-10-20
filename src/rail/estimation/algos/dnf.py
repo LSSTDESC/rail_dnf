@@ -9,6 +9,7 @@ for more details.
 """
 
 # import math
+import logging
 import numpy as np
 import qp
 
@@ -165,13 +166,13 @@ class DNFEstimator(CatEstimator):
         # set up selection mode metric choice
         if self.config.selection_mode == 0:
             self.metric = "ENF"
-            self.log.info("using metric ENF")
+            logging.getLogger(__name__).info("using metric ENF")
         elif self.config.selection_mode == 1:
             self.metric = "ANF"
-            self.log.info("using metric ANF")
+            logging.getLogger(__name__).info("using metric ANF")
         elif self.config.selection_mode == 2:
             self.metric = "DNF"
-            self.log.info("using metric DNF")
+            logging.getLogger(__name__).info("using metric DNF")
         else:
             raise ValueError(
                 "invalid value for config parameter selection_mode! Valid values are 0, 1, and 2"
@@ -189,7 +190,7 @@ class DNFEstimator(CatEstimator):
 
     def _process_chunk(self, start, end, data, first):
 
-        self.log.info(f"Process {self.rank} estimating PZ PDF for rows {start:,} - {end:,}")
+        logging.getLogger(__name__).info(f"Process {self.rank} estimating PZ PDF for rows {start:,} - {end:,}")
         # replace nondetects
         for col, err in zip(self.config.bands, self.config.err_bands):
             if np.isnan(self.config.nondetect_val):  # pragma: no cover
